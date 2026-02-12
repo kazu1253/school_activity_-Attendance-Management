@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【顧問用】管理画面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen p-4">
+
+  <header class="bg-white shadow-sm rounded-2xl p-6 mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">【顧問用】練習予定管理</h1>
+    <p class="text-sm text-slate-500 mt-2">練習日、顧問名、イベントを登録できます</p>
+  </header>
+
+  <main class="max-w-2xl mx-auto space-y-6">
+    
+    <!-- 練習予定登録 -->
+    <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <h2 class="text-lg font-bold mb-4">📅 練習予定登録</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">練習日</label>
+          <input type="date" id="single-date" 
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">練習の有無</label>
+          <select id="practice-status" 
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="○">○ 練習あり</option>
+            <option value="×">× 練習なし</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">開始時刻</label>
+          <input type="time" id="single-time" value="16:00"
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">顧問名（空欄で「自主練」）</label>
+          <input type="text" id="single-adviser" placeholder="例: 山田先生" 
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+          <p class="text-xs text-slate-400 mt-1">※空欄の場合は「自主練」として登録されます</p>
+        </div>
+
+        <button onclick="submitSingle()" id="single-btn"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg">
+          登録する
+        </button>
+      </div>
+    </section>
+
+    <!-- イベント登録 -->
+    <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <h2 class="text-lg font-bold mb-4">🎯 学校行事・大会登録</h2>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">日付</label>
+          <input type="date" id="event-date" 
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">学校行事（任意）</label>
+          <input type="text" id="school-event" placeholder="例: 探究フェス" 
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">大会（任意）</label>
+          <input type="text" id="tournament" placeholder="例: 県大会" 
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <button onclick="submitEvent()" id="event-btn"
+          class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg">
+          イベント登録
+        </button>
+      </div>
+    </section>
+
+    <!-- 曜日一括登録 -->
+    <section class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+      <h2 class="text-lg font-bold mb-4">📆 曜日一括登録</h2>
+      
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">開始日</label>
+            <input type="date" id="bulk-start" 
+              class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">終了日</label>
+            <input type="date" id="bulk-end" 
+              class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">曜日選択</label>
+          <div class="grid grid-cols-7 gap-2">
+            <label class="flex items-center justify-center p-2 bg-slate-100 rounded-lg cursor-pointer hover:bg-blue-100">
+              <input type="checkbox" value="sun" class="mr-1"> 日
+            </label>
+            <label class="flex items-center justify-center p-2 bg-slate-100 rounded-lg cursor-pointer hover:bg-blue-100">
+              <input type="checkbox" value="mon" class="mr-1"> 月
+            </label>
+            <label class="flex items-center justify-center p-2 bg-slate-100 rounded-lg cursor-pointer hover:bg-blue-100">
+              <input type="checkbox" value="tue" class="mr-1"> 火
+            </label>
+            <label class="flex items-center justify-center p-2 bg-slate-100 rounded-lg cursor-pointer hover:bg-blue-100">
+              <input type="checkbox" value="wed" class="mr-1"> 水
+            </label>
+            <label class="flex items-center justify-center p-2 bg-slate-100 rounded-lg cursor-pointer hover:bg-blue-100">
+              <input type="checkbox" value="thu" class="mr-1"> 木
+            </label>
+            <label class="flex items-center justify-center p-2 bg-slate-100 rounded-lg cursor-pointer hover:bg-blue-100">
+              <input type="checkbox" value="fri" class="mr-1"> 金
+            </label>
+            <label class="flex items-center justify-center p-2 bg-slate-100 rounded-lg cursor-pointer hover:bg-blue-100">
+              <input type="checkbox" value="sat" class="mr-1"> 土
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">練習の有無</label>
+          <select id="bulk-practice" 
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="○">○ 練習あり</option>
+            <option value="×">× 練習なし</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">開始時刻</label>
+          <input type="time" id="bulk-time" value="16:00"
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-1">顧問名（空欄で「自主練」）</label>
+          <input type="text" id="bulk-adviser" placeholder="例: 佐藤先生" 
+            class="w-full p-3 bg-slate-100 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <button onclick="submitBulk()" id="bulk-btn"
+          class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg">
+          一括登録する
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 transition-opacity pointer-events-none duration-300">
+    登録完了！
+  </div>
+
+  <script>
+    function submitSingle() {
+      const date = document.getElementById('single-date').value;
+      const practice = document.getElementById('practice-status').value;
+      const time = document.getElementById('single-time').value;
+      let adviser = document.getElementById('single-adviser').value.trim();
+      if (adviser === "") {
+        adviser = "自主練";
+      }
+      const btn = document.getElementById('single-btn');
+
+      if (!date || !time) {
+        showToast("日付と時刻を入力してください");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "登録中...";
+
+      google.script.run
+        .withSuccessHandler(msg => {
+          showToast(msg);
+          btn.disabled = false;
+          btn.innerText = "登録する";
+        })
+        .withFailureHandler(err => {
+          showToast("エラー: " + err);
+          btn.disabled = false;
+          btn.innerText = "登録する";
+        })
+        .saveSchedule({
+          mode: 'single',
+          date: date,
+          practice: practice,
+          startTime: time,
+          adviser: adviser || ""
+        });
+    }
+
+    function submitEvent() {
+      const date = document.getElementById('event-date').value;
+      const schoolEvent = document.getElementById('school-event').value.trim();
+      const tournament = document.getElementById('tournament').value.trim();
+      const btn = document.getElementById('event-btn');
+
+      if (!date) {
+        showToast("日付を入力してください");
+        return;
+      }
+
+      if (!schoolEvent && !tournament) {
+        showToast("学校行事または大会を入力してください");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "登録中...";
+
+      google.script.run
+        .withSuccessHandler(msg => {
+          showToast(msg);
+          btn.disabled = false;
+          btn.innerText = "イベント登録";
+          document.getElementById('school-event').value = "";
+          document.getElementById('tournament').value = "";
+        })
+        .withFailureHandler(err => {
+          showToast("エラー: " + err);
+          btn.disabled = false;
+          btn.innerText = "イベント登録";
+        })
+        .saveEvent({
+          date: date,
+          schoolEvent: schoolEvent,
+          tournament: tournament
+        });
+    }
+
+    function submitBulk() {
+      const startDate = document.getElementById('bulk-start').value;
+      const endDate = document.getElementById('bulk-end').value;
+      const practice = document.getElementById('bulk-practice').value;
+      const time = document.getElementById('bulk-time').value;
+      let adviser = document.getElementById('bulk-adviser').value.trim();
+      if (adviser === "") {
+        adviser = "自主練";
+      }
+      const btn = document.getElementById('bulk-btn');
+
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+      const days = Array.from(checkboxes).map(cb => cb.value);
+
+      if (!startDate || !endDate || !time || days.length === 0) {
+        showToast("すべて入力してください");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "登録中...";
+
+      google.script.run
+        .withSuccessHandler(msg => {
+          showToast(msg);
+          btn.disabled = false;
+          btn.innerText = "一括登録する";
+        })
+        .withFailureHandler(err => {
+          showToast("エラー: " + err);
+          btn.disabled = false;
+          btn.innerText = "一括登録する";
+        })
+        .saveSchedule({
+          mode: 'bulk',
+          startDate: startDate,
+          endDate: endDate,
+          practice: practice,
+          startTime: time,
+          days: days,
+          adviser: adviser || ""
+        });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.replace('opacity-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.replace('opacity-100', 'opacity-0');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

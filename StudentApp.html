@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>部活出席連絡</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-50 min-h-screen p-4">
+
+  <header class="bg-white shadow-lg rounded-2xl p-6 mb-6">
+    <h1 class="text-3xl font-bold text-indigo-700">📝 部活出席連絡</h1>
+    <p class="text-sm text-slate-600 mt-2">今週の練習予定を確認して、参加時刻を入力してください</p>
+  </header>
+
+  <main class="max-w-4xl mx-auto">
+    
+    <!-- 名前入力欄 -->
+    <section class="bg-white rounded-2xl p-6 shadow-lg border-2 border-indigo-100 mb-6">
+      <label class="block text-lg font-bold text-slate-700 mb-3">👤 あなたの名前</label>
+      <input type="text" id="student-name" placeholder="例: 山田太郎" 
+        class="w-full p-4 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-lg">
+      <p class="text-xs text-slate-500 mt-2">※出席表に登録されている名前を正確に入力してください</p>
+    </section>
+
+    <!-- ローディング表示 -->
+    <div id="loading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent"></div>
+      <p class="mt-4 text-slate-600">予定を読み込み中...</p>
+    </div>
+
+    <!-- 予定一覧 -->
+    <div id="schedules-container" class="space-y-4 hidden">
+      <!-- ここに予定カードが動的に追加される -->
+    </div>
+
+    <!-- 予定がない場合 -->
+    <div id="no-schedules" class="bg-white rounded-2xl p-8 text-center shadow-lg hidden">
+      <p class="text-xl text-slate-500">📅 直近の練習予定はありません</p>
+    </div>
+
+  </main>
+
+  <!-- トースト通知 -->
+  <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-4 rounded-full shadow-2xl opacity-0 transition-opacity pointer-events-none duration-300 z-50">
+    登録完了！
+  </div>
+
+  <script>
+    let weeklySchedules = [];
+
+    // ページ読み込み時に予定を取得
+    window.onload = function() {
+      loadSchedules();
+    };
+
+    function loadSchedules() {
+      google.script.run
+        .withSuccessHandler(function(schedules) {
+          weeklySchedules = schedules;
+          displaySchedules(schedules);
+        })
+        .withFailureHandler(function(err) {
+          showToast("エラー: " + err);
+          document.getElementById('loading').classList.add('hidden');
+        })
+        .getWeeklySchedules();
+    }
+
+    function displaySchedules(schedules) {
+      const loading = document.getElementById('loading');
+      const container = document.getElementById('schedules-container');
+      const noSchedules = document.getElementById('no-schedules');
+
+      loading.classList.add('hidden');
+
+      if (!schedules || schedules.length === 0) {
+        noSchedules.classList.remove('hidden');
+        return;
+      }
+
+      // 練習がある予定のみフィルタリング
+      const practiceSchedules = schedules.filter(s => s.isPractice);
+
+      if (practiceSchedules.length === 0) {
+        noSchedules.classList.remove('hidden');
+        return;
+      }
+
+      container.classList.remove('hidden');
+      container.innerHTML = '';
+
+      practiceSchedules.forEach((schedule, index) => {
+        const card = createScheduleCard(schedule, index);
+        container.innerHTML += card;
+      });
+    }
+
+    function createScheduleCard(schedule, index) {
+      const hasEvent = schedule.schoolEvent || schedule.tournament;
+      const attendeesList = schedule.attendees.length > 0 
+        ? schedule.attendees.join('、') 
+        : 'まだ誰も登録していません';
+
+      return `
+        <div class="bg-white rounded-2xl p-6 shadow-lg border-2 border-slate-100 hover:border-indigo-200 transition-all">
+          <div class="flex justify-between items-start mb-4">
+            <div>
+              <h3 class="text-xl font-bold text-slate-800">${schedule.dateLabel}</h3>
+              <div class="flex items-center gap-3 mt-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  schedule.isPractice ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }">
+                  ${schedule.isPractice ? '✅ 練習あり' : '❌ 練習なし'}
+                </span>
+                ${hasEvent ? `
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-700">
+                    🎯 ${schedule.schoolEvent || schedule.tournament}
+                  </span>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3 mb-4">
+            <div class="flex items-center text-slate-700">
+              <span class="w-20 text-sm font-medium">⏰ 時間:</span>
+              <span class="text-lg font-bold">${schedule.startTime}</span>
+            </div>
+            <div class="flex items-center text-slate-700">
+              <span class="w-20 text-sm font-medium">👨‍🏫 顧問:</span>
+              <span class="font-medium">${schedule.adviser}</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-4 mb-4">
+            <p class="text-sm font-medium text-slate-600 mb-2">📋 参加予定 (${schedule.attendees.length}人)</p>
+            <p class="text-sm text-slate-700">${attendeesList}</p>
+          </div>
+
+          ${schedule.isPractice ? `
+            <div class="border-t pt-4">
+              <label class="block text-sm font-medium text-slate-700 mb-2">🕐 あなたの到着時刻を入力</label>
+              <div class="flex gap-3">
+                <input type="time" id="time-${index}" 
+                  class="flex-1 p-3 bg-slate-50 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+                <button onclick="submitAttendance('${schedule.date}', ${index})" 
+                  id="btn-${index}"
+                  class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-all shadow-md hover:shadow-lg">
+                  登録
+                </button>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    function submitAttendance(date, index) {
+      const name = document.getElementById('student-name').value.trim();
+      const time = document.getElementById('time-' + index).value;
+      const btn = document.getElementById('btn-' + index);
+
+      if (!name) {
+        showToast("名前を入力してください");
+        return;
+      }
+
+      if (!time) {
+        showToast("到着時刻を入力してください");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "登録中...";
+
+      google.script.run
+        .withSuccessHandler(function(result) {
+          showToast("✅ 出席を登録しました！");
+          btn.disabled = false;
+          btn.innerText = "登録済み";
+          btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+          btn.classList.add('bg-green-600');
+          
+          // 予定を再読み込みして参加者リストを更新
+          setTimeout(() => {
+            loadSchedules();
+          }, 1000);
+        })
+        .withFailureHandler(function(err) {
+          showToast("❌ エラー: " + err);
+          btn.disabled = false;
+          btn.innerText = "登録";
+        })
+        .recordAttendance({
+          name: name,
+          date: date,
+          time: time
+        });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.replace('opacity-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.replace('opacity-100', 'opacity-0');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

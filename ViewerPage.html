@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>【顧問用】出席状況確認</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen p-4">
+
+  <header class="bg-white shadow-lg rounded-2xl p-6 mb-6">
+    <div class="flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-800">👨‍🏫 出席状況確認</h1>
+        <p class="text-sm text-slate-600 mt-2">直近7日間の参加予定者を確認できます</p>
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-slate-500">自動更新</p>
+        <p class="text-2xl font-bold text-blue-600" id="update-time">--:--</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto">
+    
+    <!-- ローディング表示 -->
+    <div id="loading" class="text-center py-16">
+      <div class="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+      <p class="mt-4 text-slate-600 text-lg">データを読み込み中...</p>
+    </div>
+
+    <!-- 予定一覧 -->
+    <div id="schedules-container" class="space-y-6 hidden">
+      <!-- ここに予定カードが動的に追加される -->
+    </div>
+
+    <!-- 予定がない場合 -->
+    <div id="no-schedules" class="bg-white rounded-2xl p-12 text-center shadow-lg hidden">
+      <div class="text-6xl mb-4">📅</div>
+      <p class="text-2xl text-slate-600 font-bold">直近7日間の練習予定はありません</p>
+    </div>
+
+  </main>
+
+  <script>
+    let weeklySchedules = [];
+
+    // ページ読み込み時に予定を取得
+    window.onload = function() {
+      loadSchedules();
+      updateTime();
+      
+      // 30秒ごとに自動更新
+      setInterval(loadSchedules, 30000);
+      setInterval(updateTime, 1000);
+    };
+
+    function updateTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('update-time').textContent = `${hours}:${minutes}`;
+    }
+
+    function loadSchedules() {
+      google.script.run
+        .withSuccessHandler(function(schedules) {
+          weeklySchedules = schedules;
+          displaySchedules(schedules);
+        })
+        .withFailureHandler(function(err) {
+          console.error("エラー:", err);
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('no-schedules').classList.remove('hidden');
+        })
+        .getWeeklySchedules();
+    }
+
+    function displaySchedules(schedules) {
+      const loading = document.getElementById('loading');
+      const container = document.getElementById('schedules-container');
+      const noSchedules = document.getElementById('no-schedules');
+
+      loading.classList.add('hidden');
+
+      if (!schedules || schedules.length === 0) {
+        noSchedules.classList.remove('hidden');
+        return;
+      }
+
+      container.classList.remove('hidden');
+      container.innerHTML = '';
+
+      schedules.forEach((schedule, index) => {
+        const card = createScheduleCard(schedule, index);
+        container.innerHTML += card;
+      });
+    }
+
+    function createScheduleCard(schedule, index) {
+      const hasEvent = schedule.schoolEvent || schedule.tournament;
+      const attendeesCount = schedule.attendees.length;
+      
+      // 参加者がいない場合
+      if (attendeesCount === 0) {
+        var attendeesHTML = `
+          <div class="text-center py-8">
+            <p class="text-slate-400 text-lg">まだ誰も登録していません</p>
+          </div>
+        `;
+      } else {
+        // 参加者リストをテーブル形式で表示
+        var attendeesHTML = `
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b-2 border-slate-200">
+                  <th class="text-left py-3 px-4 font-bold text-slate-700">No.</th>
+                  <th class="text-left py-3 px-4 font-bold text-slate-700">氏名</th>
+                  <th class="text-left py-3 px-4 font-bold text-slate-700">到着時刻</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+        
+        schedule.attendees.forEach((name, i) => {
+          attendeesHTML += `
+            <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+              <td class="py-3 px-4 text-slate-600">${i + 1}</td>
+              <td class="py-3 px-4 font-medium text-slate-800">${name}</td>
+              <td class="py-3 px-4 text-blue-600 font-bold">${schedule.attendeeTimes ? schedule.attendeeTimes[i] : '-'}</td>
+            </tr>
+          `;
+        });
+        
+        attendeesHTML += `
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="bg-white rounded-2xl shadow-lg border-2 border-slate-100 overflow-hidden">
+          <!-- ヘッダー部分 -->
+          <div class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="text-2xl font-bold mb-2">${schedule.dateLabel}</h3>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold ${
+                    schedule.isPractice ? 'bg-green-400 text-green-900' : 'bg-red-400 text-red-900'
+                  }">
+                    ${schedule.isPractice ? '✅ 練習あり' : '❌ 練習なし'}
+                  </span>
+                  ${hasEvent ? `
+                    <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-purple-400 text-purple-900">
+                      🎯 ${schedule.schoolEvent || schedule.tournament}
+                    </span>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="text-sm opacity-90">参加予定</p>
+                <p class="text-4xl font-bold">${attendeesCount}<span class="text-xl">人</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 練習情報 -->
+          <div class="p-6 bg-slate-50 border-b-2 border-slate-200">
+            <div class="grid grid-cols-2 gap-6">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                  <span class="text-2xl">⏰</span>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-500 mb-1">開始時刻</p>
+                  <p class="text-xl font-bold text-slate-800">${schedule.startTime}</p>
+                </div>
+              </div>
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mr-4">
+                  <span class="text-2xl">👨‍🏫</span>
+                </div>
+                <div>
+                  <p class="text-xs text-slate-500 mb-1">顧問</p>
+                  <p class="text-xl font-bold text-slate-800">${schedule.adviser}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 参加者リスト -->
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-lg font-bold text-slate-800 flex items-center">
+                <span class="mr-2">📋</span> 参加予定者一覧
+              </h4>
+              ${attendeesCount > 0 ? `
+                <span class="text-sm text-slate-500">合計 ${attendeesCount}名</span>
+              ` : ''}
+            </div>
+            ${attendeesHTML}
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
